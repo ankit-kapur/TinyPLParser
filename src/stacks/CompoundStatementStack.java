@@ -3,12 +3,13 @@ package stacks;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ByteCodeStack implements Stack {
-	public Map<Integer, String> stack;
+public class CompoundStatementStack implements Stack {
+
+	public Map<Integer, Integer> stack;
 	public int stackPointer;
-	
-	public ByteCodeStack() {
-		stack = new HashMap<Integer, String>();
+
+	public CompoundStatementStack() {
+		stack = new HashMap<Integer, Integer>();
 		stackPointer = -1;
 	}
 	
@@ -18,18 +19,9 @@ public class ByteCodeStack implements Stack {
 	}
 
 	@Override
-	public void push(Object object) {
-		String value = null;
-		if (object instanceof Character) {
-			value = String.valueOf(object);
-		} else if (object instanceof String) {
-			value = (String) object;
-		} else {
-			System.err.println("Something's wrong in ByteCodeStack");
-		}
-		
+	public void push(Object s) {
 		if (stack != null) {
-			stack.put(++stackPointer, value);
+			stack.put(++stackPointer, (Integer) s);
 		}
 	}
 
@@ -42,7 +34,7 @@ public class ByteCodeStack implements Stack {
 		}
 	}
 
-	@Override	
+	@Override
 	public boolean isEmpty() {
 		return (stackPointer < 0 ? true : false);
 	}

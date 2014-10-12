@@ -1,0 +1,19 @@
+﻿First commit for FPL's TinyPL parser project
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#	new file:   src/dao/CompoundExpression.java
+#	new file:   src/factorial_bytecodes.txt
+#	new file:   src/factorial_obj.png
+#	new file:   src/factorial_seq.png
+#	new file:   src/fpl/Buffer.java
+#	new file:   src/fpl/Lexer.java
+#	new file:   src/fpl/Parser.java
+#	new file:   src/fpl/Token.java
+#	new file:   src/stacks/ByteCodeStack.java
+#	new file:   src/stacks/OperatorStack.java
+#	new file:   src/stacks/Stack.java
+#	new file:   src/stacks/TermStack.java
+#
+
