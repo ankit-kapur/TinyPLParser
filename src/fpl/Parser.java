@@ -373,7 +373,6 @@ class Loop {
 
 		/* Skip over '}' */
 		if (Lexer.nextToken == Token.RIGHT_BRACE) {
-			Lexer.lex();
 			Cmpdstmt.appendLineNumbers(true);
 
 			/* Keep track of the line number of the goto */
