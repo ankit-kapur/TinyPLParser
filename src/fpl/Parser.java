@@ -52,11 +52,14 @@ class Idlist {
 
 class Stmts {
 	Stmt stmt;
+	Stmts stmts;
 
+	static int lexResult = 0;
+	
 	public Stmts() {
-		int lexResult = 0;
-		while (true) {
+//		while (true) {
 			/* The program may have already reach it's end. */
+			boolean breakLoop = false;
 			if (Lexer.nextToken == Token.KEY_END || GlobalAttributes.braceEncounteredPreviously) {
 				lexResult = Lexer.nextToken;
 				GlobalAttributes.braceEncounteredPreviously = false;
@@ -67,11 +70,16 @@ class Stmts {
 			if (lexResult != Token.KEY_END && lexResult != Token.RIGHT_BRACE) {
 				stmt = new Stmt(lexResult);
 			} else if (lexResult == Token.RIGHT_BRACE) {
-				break;
+//				break;
+				breakLoop = true;
 			} else if (lexResult == Token.KEY_END) {
-				break;
+//				break;
+				breakLoop = true;
 			}
-		}
+			if (!breakLoop)
+				stmts = new Stmts();
+//		}
+			
 	}
 }
 
