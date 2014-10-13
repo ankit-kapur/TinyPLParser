@@ -3,55 +3,34 @@ package fpl;
 import java.util.HashMap;
 import java.util.Map;
 
-import stacks.ByteCodeStack;
-import stacks.CompoundStatementStack;
-import stacks.OperatorStack;
-import stacks.Stack;
-import stacks.TermStack;
-
 public class Parser {
+	static Program p;
+
 	public static void main(String[] args) {
 		System.out.println("Enter program and terminate with 'end'!\n");
 		Lexer.lex();
+		p = new Program();
 
-		new Program();
-
-		System.out.println("\nByte code:");
-		Code.output();
-
-		// System.out.println("\nStack:");
-		// while (!Stacks.byteCodeStack.isEmpty()) {
-		// System.out.println(Stacks.byteCodeStack.pop());
-		// }
-
-	}
-}
-
-class Stacks {
-	public static Stack termStack = new TermStack();
-	public static Stack operatorStack = new OperatorStack();
-	public static Stack byteCodeStack = new ByteCodeStack();
-	public static Stack cmpdStmtStack = new CompoundStatementStack();
-
-	public static void clearStacks() {
-		termStack = new TermStack();
-		operatorStack = new OperatorStack();
-		byteCodeStack = new ByteCodeStack();
+		System.out.println("\nByte code:\n" + Code.output());
 	}
 }
 
 class Program {
+	Decls decls;
+	Stmts stmts;
+
 	public Program() {
-		new Decls();
-		new Stmts();
+		decls = new Decls();
+		stmts = new Stmts();
 		Code.addToCodeList(Code.generateCodeForEnd());
 	}
 }
 
 class Decls {
+	Idlist idlist;
 
 	public Decls() {
-		new Idlist();
+		idlist = new Idlist();
 	}
 }
 
@@ -72,6 +51,8 @@ class Idlist {
 }
 
 class Stmts {
+	Stmt stmt;
+
 	public Stmts() {
 		int lexResult = 0;
 		while (true) {
@@ -82,9 +63,9 @@ class Stmts {
 			} else {
 				lexResult = Lexer.lex();
 			}
-			
+
 			if (lexResult != Token.KEY_END && lexResult != Token.RIGHT_BRACE) {
-				new Stmt(lexResult);
+				stmt = new Stmt(lexResult);
 			} else if (lexResult == Token.RIGHT_BRACE) {
 				break;
 			} else if (lexResult == Token.KEY_END) {
@@ -95,16 +76,20 @@ class Stmts {
 }
 
 class Stmt {
+	Loop loop;
+	Cond cond;
+	Assign assign;
+
 	public Stmt(int lexResult) {
 		switch (lexResult) {
 		case Token.KEY_WHILE:
-			new Loop();
+			loop = new Loop();
 			break;
 		case Token.KEY_IF:
-			new Cond();
+			cond = new Cond();
 			break;
 		case Token.ID:
-			new Assign();
+			assign = new Assign();
 			break;
 		case Token.SEMICOLON:
 			break;
@@ -118,6 +103,8 @@ class Stmt {
 
 /* x = 12 + 3 * y; */
 class Assign {
+	Expr expr;
+
 	public Assign() {
 		Map<Character, Integer> idMap = GlobalAttributes.getIdMap();
 		char assignmentDestination = Lexer.ident;
@@ -126,7 +113,7 @@ class Assign {
 		Lexer.lex();
 		Lexer.lex();
 
-		new Expr();
+		expr = new Expr();
 		Code.addAllToCodeList(Code.generateCodeFromByteCodeStack());
 		Stacks.clearStacks();
 
@@ -139,9 +126,11 @@ class Assign {
 
 class Expr {
 
+	Term term;
+	Expr expr;
+
 	/* expr -> term [ (+ | -) expr ] */
 	public Expr() {
-
 		boolean semicolonEncountered = false, relationalOpEncountered = false;
 
 		if (Lexer.nextToken == Token.LEFT_PAREN) {
@@ -153,21 +142,21 @@ class Expr {
 		/* Check for exit condition */
 		if (Lexer.nextToken != Token.RIGHT_PAREN && Lexer.nextToken != Token.SEMICOLON && !GlobalAttributes.isRelationalOperator(Lexer.nextToken)) {
 			/* No end condition met. Check for add or sub symbols */
-			new Term();
+			term = new Term();
 
 			if (Lexer.nextToken == Token.ADD_OP || Lexer.nextToken == Token.SUB_OP) {
 				Stacks.operatorStack.push(Lexer.nextChar);
 
 				/* Move to the next term and call Expr */
 				Lexer.lex();
-				new Expr();
+				expr = new Expr();
 			} else if (Lexer.nextToken == Token.RIGHT_PAREN) {
 				relationalOpEncountered = rightParenthesisEncountered();
 
 				/* Move to the next term and call Expr */
 				if (!relationalOpEncountered) {
 					Lexer.lex();
-					new Expr();
+					expr = new Expr();
 				}
 			} else if (Lexer.nextToken == Token.SEMICOLON) {
 				semicolonEncountered = true;
@@ -182,7 +171,7 @@ class Expr {
 			/* Move to the next term and call Expr */
 			if (!relationalOpEncountered) {
 				Lexer.lex();
-				new Expr();
+				expr = new Expr();
 			}
 		} else if (Lexer.nextToken == Token.SEMICOLON) {
 			semicolonEncountered = true;
@@ -237,10 +226,10 @@ class Expr {
 
 		/*- Next pop should be the left parenthesis '('. If it's not,
 		 *  then this is the end of an IF or a WHILE condition */
-		Object popped = Stacks.termStack.getElementAtPosition(Stacks.termStack.getStackPointerPosition() - 1);
-		if (popped == null) {
+		Object oneBelowTopOfTheStack = Stacks.termStack.getElementAtPosition(Stacks.termStack.getStackPointerPosition() - 1);
+		if (oneBelowTopOfTheStack == null) {
 			relationalOpEncountered = true;
-		} else if (popped instanceof Character && !(((Character) popped) == Token.toString(Token.LEFT_PAREN).charAt(0))) {
+		} else if (oneBelowTopOfTheStack instanceof Character && !(((Character) oneBelowTopOfTheStack) == Token.toString(Token.LEFT_PAREN).charAt(0))) {
 			relationalOpEncountered = true;
 		} else {
 			Object rightOperand = Stacks.termStack.pop();
@@ -281,12 +270,14 @@ class Expr {
 }
 
 class Term {
+	Factor factor;
+	Term term;
 
 	/* term -> factor [ (* | /) term ] */
 	public Term() {
-		new Factor();
+		factor = new Factor();
 
-		if (!GlobalAttributes.isArithmeticOperator(Lexer.nextToken))
+		if (!GlobalAttributes.isArithmeticOperator(Lexer.nextToken) && Lexer.nextToken != Token.SEMICOLON)
 			Lexer.lex();
 
 		if (Lexer.nextToken != Token.ADD_OP && Lexer.nextToken != Token.SUB_OP) {
@@ -300,7 +291,7 @@ class Term {
 				Lexer.lex();
 
 				/* Call Term */
-				new Term();
+				term = new Term();
 			}
 		} else {
 			/* Exit condition */
@@ -309,6 +300,7 @@ class Term {
 }
 
 class Factor {
+	Expr expr;
 
 	/* factor -> int_lit | id | ‘(‘ expr ‘)’ */
 	public Factor() {
@@ -347,19 +339,23 @@ class Factor {
 				Stacks.termStack.push(comp);
 
 				/* Put into the bytecode stack as well */
-				if (!(leftOperand instanceof CompoundExpression))
+				if (leftOperand != null && !(leftOperand instanceof CompoundExpression))
 					Stacks.byteCodeStack.push(leftOperand);
 				Stacks.byteCodeStack.push(valueToPush);
 				Stacks.byteCodeStack.push(operator);
 			}
 
 		} else if (Lexer.nextToken == Token.LEFT_PAREN) {
-			new Expr();
+			expr = new Expr();
 		}
 	}
 }
 
 class Cond {
+	Rexpr rexpr;
+	Cmpdstmt cmpdstmt1;
+	Cmpdstmt cmpdstmt2;
+	
 	public Cond() {
 
 		/* Skip over the opening parenthesis '(' */
@@ -367,10 +363,10 @@ class Cond {
 		Lexer.lex();
 
 		/* Process the condition */
-		new Rexpr();
+		 rexpr = new Rexpr();
 
 		/* The body */
-		new Cmpdstmt();
+		cmpdstmt1 = new Cmpdstmt();
 
 		/* Skip over '}' */
 		if (Lexer.nextToken == Token.RIGHT_BRACE) {
@@ -383,7 +379,7 @@ class Cond {
 				Stacks.cmpdStmtStack.push(GlobalAttributes.getInstructionNumber());
 				Code.addToCodeList(Code.generateCodeForGoto());
 
-				new Cmpdstmt();
+				cmpdstmt2 = new Cmpdstmt();
 				Cmpdstmt.appendLineNumbers(false);
 			} else if (Lexer.nextToken == Token.RIGHT_BRACE) {
 				Cmpdstmt.appendLineNumbers(false);
@@ -397,6 +393,9 @@ class Cond {
 }
 
 class Loop {
+	Rexpr expr;
+	Cmpdstmt cmpdstmt;
+	
 	public Loop() {
 		/* Skip over the opening parenthesis '(' */
 		Lexer.lex();
@@ -405,10 +404,10 @@ class Loop {
 		int loopHeadInstructionNumber = GlobalAttributes.getInstructionNumber();
 
 		/* Process the condition */
-		new Rexpr();
+		expr = new Rexpr();
 
 		/* The body */
-		new Cmpdstmt();
+		cmpdstmt = new Cmpdstmt();
 
 		/* Skip over '}' */
 		if (Lexer.nextToken == Token.RIGHT_BRACE || Lexer.nextToken == Token.KEY_END) {
@@ -423,7 +422,7 @@ class Loop {
 }
 
 class Cmpdstmt {
-
+	Stmts stmts;
 	public Cmpdstmt() {
 
 		/*- Skip over the opening braces '{' (if you need to) */
@@ -432,7 +431,7 @@ class Cmpdstmt {
 		}
 		if (Lexer.nextToken == Token.LEFT_BRACE) {
 
-			new Stmts();
+			stmts = new Stmts();
 
 			/* Skip over the opening braces '{' */
 			if (Lexer.nextToken == Token.RIGHT_BRACE || Lexer.nextToken == Token.KEY_END) {
@@ -474,11 +473,11 @@ class Cmpdstmt {
 }
 
 class Rexpr {
-
+	Expr expr1, expr2;
 	public Rexpr() {
 
 		/*--- Left-hand side of the relational-exp ---*/
-		new Expr();
+		expr1 = new Expr();
 		/* Store the byte-code generated */
 		Map<Integer, String> leftHandSide = Code.generateCodeFromByteCodeStack();
 		Stacks.clearStacks();
@@ -493,7 +492,7 @@ class Rexpr {
 		}
 
 		/*--- Right-hand side of the relational-exp ---*/
-		new Expr();
+		expr2 = new Expr();
 		/* Store the byte-code generated */
 		Map<Integer, String> rightHandSide = Code.generateCodeFromByteCodeStack();
 		Stacks.clearStacks();

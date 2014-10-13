@@ -29,36 +29,48 @@ public class CompoundExpression {
 
 	public void setLeftOperand(Object leftOperand) {
 		CompoundExpression compoundExpression = null;
-		if (leftOperand instanceof CompoundExpression) {
-			compoundExpression = (CompoundExpression) leftOperand;
-		} else {
-			String compoundString = null;
-			if (leftOperand instanceof Character)
-				compoundString = String.valueOf((Character) leftOperand);
-			else if (leftOperand instanceof String)
-				compoundString = (String) leftOperand;
-			else
-				System.err.println("Problem in CompoundExpression");
-				
-			compoundExpression = new CompoundExpression(compoundString);
+		if (leftOperand != null) {
+			if (leftOperand instanceof CompoundExpression) {
+				compoundExpression = (CompoundExpression) leftOperand;
+			} else {
+				String compoundString = null;
+				if (leftOperand instanceof Character)
+					compoundString = String.valueOf((Character) leftOperand);
+				else if (leftOperand instanceof String)
+					compoundString = (String) leftOperand;
+				else
+					System.err.println("Problem in CompoundExpression");
+
+				compoundExpression = new CompoundExpression(compoundString);
+			}
 		}
 
 		this.leftOperand = compoundExpression;
 	}
 
-	public CompoundExpression getRightOperand() {
-		return rightOperand;
-	}
-
 	public void setRightOperand(Object rightOperand) {
 
 		CompoundExpression compoundExpression = null;
-		if (rightOperand instanceof CompoundExpression) {
-			compoundExpression = (CompoundExpression) rightOperand;
-		} else {
-			compoundExpression = new CompoundExpression((String) rightOperand);
+		if (rightOperand != null) {
+			if (rightOperand instanceof CompoundExpression) {
+				compoundExpression = (CompoundExpression) rightOperand;
+			} else {
+				String compoundString = null;
+				if (rightOperand instanceof Character)
+					compoundString = String.valueOf((Character) rightOperand);
+				else if (rightOperand instanceof String)
+					compoundString = (String) rightOperand;
+				else
+					System.err.println("Problem in CompoundExpression");
+
+				compoundExpression = new CompoundExpression(compoundString);
+			}
 		}
 
 		this.rightOperand = compoundExpression;
+	}
+
+	public CompoundExpression getRightOperand() {
+		return rightOperand;
 	}
 }

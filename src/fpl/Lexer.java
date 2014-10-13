@@ -5,7 +5,7 @@ public class Lexer {
 
 	static public char ch = ' ';
 	static public char ident = ' ';
-	static private Buffer buffer = new Buffer(new DataInputStream(System.in));
+	static public Buffer buffer = new Buffer(new DataInputStream(System.in));
 	static public int nextToken;
 	static public char nextChar;
 	static public int intValue;

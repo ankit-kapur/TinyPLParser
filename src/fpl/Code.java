@@ -60,11 +60,13 @@ class Code {
 		}
 	}
 
-	public static void output() {
+	public static String output() {
+		String outputString = "";
 		for (int i=0; i < codeList.size(); i++) {
 			String codeString = codeList.get(i);
-			System.out.println(codeString);
+			outputString += codeString + "\n";
 		}
+		return outputString;
 	}
 
 	public static Map<Integer, String> generateCodeFromByteCodeStack() {
