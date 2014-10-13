@@ -13,7 +13,6 @@ public class Lexer {
 	public static int lex() {
 		while (Character.isWhitespace(ch)) {
 			ch = buffer.getChar();
-			System.out.print("");
 		}
 		if (Character.isLetter(ch)) {
 			ident = Character.toLowerCase(ch);

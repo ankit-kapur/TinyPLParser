@@ -76,11 +76,13 @@ class Stmts {
 		int lexResult = 0;
 		while (true) {
 			/* The program may have already reach it's end. */
-			if (Lexer.nextToken == Token.KEY_END)
+			if (Lexer.nextToken == Token.KEY_END || GlobalAttributes.braceEncounteredPreviously) {
 				lexResult = Lexer.nextToken;
-			else
+				GlobalAttributes.braceEncounteredPreviously = false;
+			} else {
 				lexResult = Lexer.lex();
-
+			}
+			
 			if (lexResult != Token.KEY_END && lexResult != Token.RIGHT_BRACE) {
 				new Stmt(lexResult);
 			} else if (lexResult == Token.RIGHT_BRACE) {
@@ -105,6 +107,8 @@ class Stmt {
 			new Assign();
 			break;
 		case Token.SEMICOLON:
+			break;
+		case Token.LEFT_BRACE:
 			break;
 		default:
 			System.err.println("UNKNOWN CASE. Lex: " + Token.toString(lexResult));
@@ -138,7 +142,7 @@ class Expr {
 	/* expr -> term [ (+ | -) expr ] */
 	public Expr() {
 
-		boolean rightParenthesisEncountered = false, semicolonEncountered = false, relationalOpEncountered = false;
+		boolean semicolonEncountered = false, relationalOpEncountered = false;
 
 		if (Lexer.nextToken == Token.LEFT_PAREN) {
 			/* If the very first character is an opening parenthesis '(' */
@@ -157,59 +161,39 @@ class Expr {
 				/* Move to the next term and call Expr */
 				Lexer.lex();
 				new Expr();
+			} else if (Lexer.nextToken == Token.RIGHT_PAREN) {
+				relationalOpEncountered = rightParenthesisEncountered();
+
+				/* Move to the next term and call Expr */
+				if (!relationalOpEncountered) {
+					Lexer.lex();
+					new Expr();
+				}
 			} else if (Lexer.nextToken == Token.SEMICOLON) {
 				semicolonEncountered = true;
-			} else if (Lexer.nextToken == Token.RIGHT_PAREN) {
-				rightParenthesisEncountered = true;
 			} else if (GlobalAttributes.isRelationalOperator(Lexer.nextToken)) {
 				relationalOpEncountered = true;
 			} else {
-				System.err.println("This shouldn't happen.");
+				System.err.println("This shouldn't be coming after Term(): " + Token.toString(Lexer.nextToken));
 			}
 		} else if (Lexer.nextToken == Token.RIGHT_PAREN) {
-			rightParenthesisEncountered = true;
-			System.err.println("I thought it'll never come here for a right parenthesis. But it's ok.");
+			relationalOpEncountered = rightParenthesisEncountered();
+
+			/* Move to the next term and call Expr */
+			if (!relationalOpEncountered) {
+				Lexer.lex();
+				new Expr();
+			}
 		} else if (Lexer.nextToken == Token.SEMICOLON) {
 			semicolonEncountered = true;
 			System.err.println("I thought it'll never come here for a semicolon. But it's ok.");
 		} else if (GlobalAttributes.isRelationalOperator(Lexer.nextToken)) {
 			relationalOpEncountered = true;
 			System.err.println("I thought it'll never come here for a relational operator. But it's ok.");
+		} else {
+			System.err.println("This shouldn't be coming after Term(): " + Lexer.nextToken);
 		}
 
-		if (rightParenthesisEncountered) {
-			/* Exit condition. Pop stuff until you reach the left parenthesis */
-
-			/*
-			 * Next pop should be the left parenthesis '('. If it's not, then
-			 * this is the end of an IF or a WHILE condition
-			 */
-			if (Stacks.termStack.getElementAtPosition(Stacks.termStack.getStackPointerPosition() - 1) != Token.toString(Token.LEFT_PAREN)) {
-				relationalOpEncountered = true;
-			} else {
-				CompoundExpression rightOperand = (CompoundExpression) Stacks.termStack.pop();
-				/* Next pop WILL be the left parenthesis '(' */
-				Stacks.termStack.pop();
-				/*- And the next should be the operand t1 in the expression t1 + (t2) */
-				Object leftOperand = Stacks.termStack.pop();
-
-				/* Pop the operator */
-				char operator = (Character) Stacks.operatorStack.pop();
-
-				/*- Make a new node t3 that holds t1 + (t2) as a compound expression */
-				CompoundExpression newNode = new CompoundExpression();
-				newNode.setLeftOperand(leftOperand);
-				newNode.setRightOperand(rightOperand);
-				newNode.setOperator(String.valueOf(operator));
-				Stacks.termStack.push(newNode);
-
-				/* Push onto byte code stack */
-				if (!(leftOperand instanceof CompoundExpression))
-					Stacks.byteCodeStack.push(leftOperand);
-				Stacks.byteCodeStack.push(operator);
-			}
-
-		}
 		if (semicolonEncountered || relationalOpEncountered) {
 			/*
 			 * Exit condition. If there's any operators left in the stack, we
@@ -246,6 +230,54 @@ class Expr {
 				Lexer.lex();
 		}
 	}
+
+	public boolean rightParenthesisEncountered() {
+		/* Exit condition. Pop stuff until you reach the left parenthesis */
+		boolean relationalOpEncountered = false;
+
+		/*- Next pop should be the left parenthesis '('. If it's not,
+		 *  then this is the end of an IF or a WHILE condition */
+		Object popped = Stacks.termStack.getElementAtPosition(Stacks.termStack.getStackPointerPosition() - 1);
+		if (popped == null) {
+			relationalOpEncountered = true;
+		} else if (popped instanceof Character && !(((Character) popped) == Token.toString(Token.LEFT_PAREN).charAt(0))) {
+			relationalOpEncountered = true;
+		} else {
+			Object rightOperand = Stacks.termStack.pop();
+			/* Next pop WILL be the left parenthesis '(' */
+			Stacks.termStack.pop();
+
+			/*- Make a new node t3 that holds t1 + (t2) as a compound expression */
+			CompoundExpression newNode = new CompoundExpression();
+
+			/*- For handling expressions like t1 + (t2)
+			 *  Next should be the operand t1 in the expression */
+			Object leftOperand = Stacks.termStack.pop();
+			if (leftOperand != null) {
+
+				/*- Pop the operator */
+				Object poppedOp = Stacks.operatorStack.pop();
+				if (poppedOp != null) {
+					char operator = (Character) poppedOp;
+					newNode.setOperator(String.valueOf(operator));
+					Stacks.byteCodeStack.push(operator);
+				}
+				/* Push onto byte code stack */
+				newNode.setLeftOperand(leftOperand);
+				newNode.setRightOperand(rightOperand);
+				if (!(leftOperand instanceof CompoundExpression))
+					Stacks.byteCodeStack.push(leftOperand);
+
+			} else {
+				newNode.setLeftOperand("(");
+				newNode.setRightOperand(")");
+				newNode.setOperator(String.valueOf(rightOperand));
+			}
+
+			Stacks.termStack.push(newNode);
+		}
+		return relationalOpEncountered;
+	}
 }
 
 class Term {
@@ -254,7 +286,8 @@ class Term {
 	public Term() {
 		new Factor();
 
-		Lexer.lex();
+		if (!GlobalAttributes.isArithmeticOperator(Lexer.nextToken))
+			Lexer.lex();
 
 		if (Lexer.nextToken != Token.ADD_OP && Lexer.nextToken != Token.SUB_OP) {
 			/* No end condition met. Check for add or sub symbols */
@@ -331,6 +364,7 @@ class Cond {
 
 		/* Skip over the opening parenthesis '(' */
 		Lexer.lex();
+		Lexer.lex();
 
 		/* Process the condition */
 		new Rexpr();
@@ -341,6 +375,7 @@ class Cond {
 		/* Skip over '}' */
 		if (Lexer.nextToken == Token.RIGHT_BRACE) {
 			Lexer.lex();
+			GlobalAttributes.braceEncounteredPreviously = true;
 			if (Lexer.nextToken == Token.KEY_ELSE) {
 				Cmpdstmt.appendLineNumbers(true);
 
@@ -350,9 +385,13 @@ class Cond {
 
 				new Cmpdstmt();
 				Cmpdstmt.appendLineNumbers(false);
+			} else if (Lexer.nextToken == Token.RIGHT_BRACE) {
+				Cmpdstmt.appendLineNumbers(false);
 			} else {
 				Cmpdstmt.appendLineNumbers(false);
 			}
+		} else {
+			System.err.println("Why is this not a right brace after the IF/ELSE?");
 		}
 	}
 }
@@ -364,7 +403,7 @@ class Loop {
 
 		/* Keep track of the instruction number at the beginning of the loop */
 		int loopHeadInstructionNumber = GlobalAttributes.getInstructionNumber();
-		
+
 		/* Process the condition */
 		new Rexpr();
 
@@ -372,11 +411,13 @@ class Loop {
 		new Cmpdstmt();
 
 		/* Skip over '}' */
-		if (Lexer.nextToken == Token.RIGHT_BRACE) {
+		if (Lexer.nextToken == Token.RIGHT_BRACE || Lexer.nextToken == Token.KEY_END) {
 			Cmpdstmt.appendLineNumbers(true);
 
 			/* Keep track of the line number of the goto */
 			Code.addToCodeList(Code.generateCodeForGoto(loopHeadInstructionNumber));
+		} else {
+			System.err.println("Why is this not a right brace after the LOOP?");
 		}
 	}
 }
@@ -390,6 +431,7 @@ class Cmpdstmt {
 			Lexer.lex();
 		}
 		if (Lexer.nextToken == Token.LEFT_BRACE) {
+
 			new Stmts();
 
 			/* Skip over the opening braces '{' */

@@ -32,7 +32,15 @@ public class CompoundExpression {
 		if (leftOperand instanceof CompoundExpression) {
 			compoundExpression = (CompoundExpression) leftOperand;
 		} else {
-			compoundExpression = new CompoundExpression((String) leftOperand);			
+			String compoundString = null;
+			if (leftOperand instanceof Character)
+				compoundString = String.valueOf((Character) leftOperand);
+			else if (leftOperand instanceof String)
+				compoundString = (String) leftOperand;
+			else
+				System.err.println("Problem in CompoundExpression");
+				
+			compoundExpression = new CompoundExpression(compoundString);
 		}
 
 		this.leftOperand = compoundExpression;
