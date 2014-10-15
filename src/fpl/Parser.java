@@ -54,32 +54,30 @@ class Stmts {
 	Stmt stmt;
 	Stmts stmts;
 
-	static int lexResult = 0;
-	
-	public Stmts() {
-//		while (true) {
-			/* The program may have already reach it's end. */
-			boolean breakLoop = false;
-			if (Lexer.nextToken == Token.KEY_END || GlobalAttributes.braceEncounteredPreviously) {
-				lexResult = Lexer.nextToken;
-				GlobalAttributes.braceEncounteredPreviously = false;
-			} else {
-				lexResult = Lexer.lex();
-			}
 
-			if (lexResult != Token.KEY_END && lexResult != Token.RIGHT_BRACE) {
-				stmt = new Stmt(lexResult);
-			} else if (lexResult == Token.RIGHT_BRACE) {
-//				break;
-				breakLoop = true;
-			} else if (lexResult == Token.KEY_END) {
-//				break;
-				breakLoop = true;
-			}
-			if (!breakLoop)
-				stmts = new Stmts();
-//		}
-			
+	public Stmts() {
+		// while (true) {
+		/* The program may have already reach it's end. */
+
+		int lexResult = 0;
+		boolean breakLoop = false;
+		if (Lexer.nextToken == Token.KEY_END || GlobalAttributes.braceEncounteredPreviously) {
+			lexResult = Lexer.nextToken;
+			GlobalAttributes.braceEncounteredPreviously = false;
+		} else {
+			lexResult = Lexer.lex();
+		}
+
+		if (lexResult != Token.KEY_END && lexResult != Token.RIGHT_BRACE) {
+			stmt = new Stmt(lexResult);
+		} else if (lexResult == Token.RIGHT_BRACE) {
+			breakLoop = true;
+		} else if (lexResult == Token.KEY_END) {
+			breakLoop = true;
+		}
+
+		if (!breakLoop)
+			stmts = new Stmts();
 	}
 }
 
@@ -363,7 +361,7 @@ class Cond {
 	Rexpr rexpr;
 	Cmpdstmt cmpdstmt1;
 	Cmpdstmt cmpdstmt2;
-	
+
 	public Cond() {
 
 		/* Skip over the opening parenthesis '(' */
@@ -371,7 +369,7 @@ class Cond {
 		Lexer.lex();
 
 		/* Process the condition */
-		 rexpr = new Rexpr();
+		rexpr = new Rexpr();
 
 		/* The body */
 		cmpdstmt1 = new Cmpdstmt();
@@ -403,7 +401,7 @@ class Cond {
 class Loop {
 	Rexpr expr;
 	Cmpdstmt cmpdstmt;
-	
+
 	public Loop() {
 		/* Skip over the opening parenthesis '(' */
 		Lexer.lex();
@@ -431,6 +429,7 @@ class Loop {
 
 class Cmpdstmt {
 	Stmts stmts;
+
 	public Cmpdstmt() {
 
 		/*- Skip over the opening braces '{' (if you need to) */
@@ -482,6 +481,7 @@ class Cmpdstmt {
 
 class Rexpr {
 	Expr expr1, expr2;
+
 	public Rexpr() {
 
 		/*--- Left-hand side of the relational-exp ---*/
